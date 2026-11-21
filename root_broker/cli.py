@@ -1,10 +1,12 @@
 """Command lines: request-root (the agent's client) and root-broker (daemon + the human's approve/deny/list)."""
 import argparse
 import os
+import shlex
 import sys
 import time
 
 from .protocol import call, recv
+from .text import visible
 
 
 def main(argv=None):
@@ -21,11 +23,13 @@ def ok(f):
 
 
 def fmt(r):
+    """One request for the terminal. Agent-controlled text goes through visible(), so escape sequences and
+    bidi/control characters can't rewrite what the approver sees; shlex.join shows argument boundaries."""
     age = int(time.time() - r["created"])
-    line = f"#{r['id']:<4} {r['state']:<8} {age // 60:>4}m  {r['user']}: {' '.join(r['argv'])}"
-    line += f"\n       cwd {r['cwd']}  why: {r['reason']}"
+    line = f"#{r['id']:<4} {r['state']:<8} {age // 60:>4}m  {visible(r['user'])}: {visible(shlex.join(r['argv']))}"
+    line += f"\n       cwd {visible(r['cwd'])}  why: {visible(r['reason'])}"
     for w in r.get("warnings") or []:
-        line += f"\n       ⚠ {w}"
+        line += f"\n       ⚠ {visible(w)}"
     return line
 
 

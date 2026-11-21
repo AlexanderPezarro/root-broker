@@ -187,6 +187,12 @@ try:
     d = start()
     run("root-broker", "list", "3", code=0)
     expect("expired" in run("root-broker", "approve", "9", code=1).stderr, "pending request is dropped on restart")
+
+    # terminal: escape sequences and bidi characters in agent text are shown, not interpreted
+    run("request-root", "--no-wait", "--reason", "tty ‮", "--", "echo", "a\x1b[2K\rb", code=0)
+    for p in (run("root-broker", "show", "10", code=0), run("root-broker", "list", "1", code=0)):
+        expect("\x1b" not in p.stdout and "‮" not in p.stdout, "no raw escape/bidi characters reach the terminal")
+        expect("\\u001b[2K\\u000db" in p.stdout and "\\u202e" in p.stdout, "escaped characters are made visible")
     run("request-root", "--help", code=0)
 finally:
     d.terminate()
