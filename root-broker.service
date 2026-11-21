@@ -1,0 +1,17 @@
+[Unit]
+Description=Root approval broker (request-root): runs exact commands as root after a human approves them
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -I /usr/local/sbin/root-broker serve
+# The socket is chowned to this group: set it to the agent user's primary gid.
+# Every op still checks the caller's uid via SO_PEERCRED.
+Environment=ROOT_BROKER_GID=1000
+RuntimeDirectory=root-broker
+RuntimeDirectoryMode=0755
+StateDirectory=root-broker
+StateDirectoryMode=0700
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

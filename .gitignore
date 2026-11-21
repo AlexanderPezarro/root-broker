@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+# your own config: seeds /etc/root-broker/config.json on first install. Keep the ntfy token out of it.
+config.json

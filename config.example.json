@@ -1,0 +1,18 @@
+{
+  "allowed_uids": [1000],
+  "approver_uids": [0],
+  "request_ttl": 3600,
+  "run_timeout": 900,
+  "max_ttl": 14400,
+  "ntfy_url": null,
+  "ntfy_token": null,
+  "phone": null,
+  "auto_approve": [
+    ["/usr/sbin/ufw", "status"],
+    ["/usr/sbin/ufw", "status", "verbose"],
+    ["/usr/sbin/ufw", "status", "numbered"],
+    ["/usr/sbin/iptables", "-S"],
+    ["/usr/bin/ss", "-lntup"],
+    ["/usr/bin/crontab", "-l"]
+  ]
+}
