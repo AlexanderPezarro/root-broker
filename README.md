@@ -14,10 +14,27 @@ you:    root-broker list                        # pending requests (no sudo need
 
 ## How it works
 
-There's one stdlib-only Python file, `root_broker.py`, installed under two names:
+The code is stdlib-only Python: an entry script, `root-broker`, plus the `root_broker/` package beside it. `install.sh` copies both into `/usr/local/lib/root-broker` (root-owned) and links the entry script under two names:
 
 - **`request-root`** is the agent's client. It sends the request over a Unix socket and blocks until the command has run or the wait times out.
 - **`root-broker`** is the daemon (`serve`, run by systemd as root) plus your `list` / `show` / `approve` / `deny` commands.
+
+### Code layout
+
+Each module in `root_broker/` does one job. In the order a request passes through them:
+
+| module | what it does |
+|---|---|
+| `cli.py` | the `request-root` and `root-broker` command lines (client side) |
+| `protocol.py` | the socket wire format, one JSON object per line |
+| `daemon.py` | the socket listener: identifies the caller (`SO_PEERCRED`) and dispatches each op |
+| `checks.py` | request-time checks: argv[0] on root's PATH, file hashes, agent-writable files |
+| `broker.py` | request state (submit, approve, deny, wait, TTL grants) and the audit log |
+| `execute.py` | running an approved command: no shell, clean env, pinned files re-checked |
+| `notify.py` | the ntfy push |
+| `phone.py`, `pages.py`, `tailscale.py` | the phone approval server and its gate, its HTML pages, the tailscaled whois lookup |
+| `text.py` | escaping agent-controlled text for the terminal, the push and HTML |
+| `config.py` | paths, defaults and config loading |
 
 The daemon identifies every caller by the kernel's peer credentials on the socket (`SO_PEERCRED`), not by anything the caller claims. Only allowed uids may submit requests, and only approver uids may approve them. By default only root can approve, so approving means running `sudo`.
 
@@ -79,6 +96,8 @@ sudo NTFY_CONTAINER=ntfy NTFY_BASE=https://ntfy.example.com ./ntfy-setup.sh   # 
 To keep your own settings next to the code, copy `config.example.json` to `config.json`, which is gitignored. `install.sh` uses it to seed the installed config on first install and never overwrites an existing one. Keep the ntfy token out of this copy, because the checkout is agent-readable. After install, edit `/etc/root-broker/config.json` (`0600`, root-owned) to set `allowed_uids`, `auto_approve` and, if you want phone approval, `phone`. In `root-broker.service`, set `ROOT_BROKER_GID` to the agent user's group.
 
 The checkout can stay editable by the agent because the installed copy isn't: a change takes effect only after you re-run `install.sh`.
+
+**Smoke test:** `python3 tests/smoke.py` runs a real daemon as you against temporary paths and a fake tailscaled, and checks approve, deny, pinned files, TTL grants, the phone gate and restart handling. Run it before `install.sh`.
 
 **Testing without root:** set `ROOT_BROKER_TEST=1`, point `ROOT_BROKER_SOCK`, `ROOT_BROKER_STATE` and `ROOT_BROKER_CONFIG` at temporary paths, and run `root-broker serve`.
 

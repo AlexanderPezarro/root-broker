@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+"""Entry point for both root-broker and request-root (picked by the name it is run as).
+
+The code is in the root_broker package next to this file; see root_broker/__init__.py for the overview.
+The package is found from this file's real path, never from the caller's cwd or PYTHONPATH, so the
+installed symlinks in /usr/local/{s,}bin only ever load the root-owned copy in /usr/local/lib/root-broker.
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from root_broker.cli import main  # noqa: E402
+
+sys.exit(main())
